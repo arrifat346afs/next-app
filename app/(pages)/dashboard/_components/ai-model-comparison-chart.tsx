@@ -295,7 +295,7 @@ export function AIModelComparisonChart() {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, []);
+  }, [addModelData, clearAllData, fetchModelData]);
 
   // Get unique model names from the data
   const modelNames =

@@ -64,27 +64,29 @@ export const VideoPlayer: React.FC<CustomVideoPlayerProps> = ({ videoSrc }) => {
       }
     };
 
-    if (playerRef.current) {
-      playerRef.current.addEventListener("mousemove", handleMouseMove);
-      playerRef.current.addEventListener("mouseleave", handleMouseLeave);
+    const currentPlayerRef = playerRef.current;
+
+    if (currentPlayerRef) {
+      currentPlayerRef.addEventListener("mousemove", handleMouseMove);
+      currentPlayerRef.addEventListener("mouseleave", handleMouseLeave);
     }
 
     const inactivityInterval = setInterval(checkMouseInactivity, 1000);
 
     return () => {
-      if (playerRef.current) {
-        playerRef.current.removeEventListener("mousemove", handleMouseMove);
-        playerRef.current.removeEventListener("mouseleave", handleMouseLeave);
+      if (currentPlayerRef) {
+        currentPlayerRef.removeEventListener("mousemove", handleMouseMove);
+        currentPlayerRef.removeEventListener("mouseleave", handleMouseLeave);
       }
       clearInterval(inactivityInterval);
     };
-  }, [isFullscreen, lastMouseMoveTime]);
+  }, [isFullscreen, lastMouseMoveTime, isPlaying]);
 
   useEffect(() => {
     if (!isFullscreen) {
       setShowControls(true);
     }
-  }, [isFullscreen]);
+  }, [isFullscreen, isPlaying]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
