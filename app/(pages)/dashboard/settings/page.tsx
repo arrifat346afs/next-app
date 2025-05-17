@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useUser } from '@clerk/nextjs';
 import { Bell, Globe, Lock, Mail, Moon, Palette, Shield } from "lucide-react";
-
+export const runtime = "edge";
 export default function SettingsPage() {
   const user = useUser();
 

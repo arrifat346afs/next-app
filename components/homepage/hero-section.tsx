@@ -1,99 +1,143 @@
 "use client";
-import { ArrowRight, Github, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { motion } from "motion/react";
+import { AnimatedGroup } from "../motion-primitives/animated-group";
+import { TextEffect } from "../motion-primitives/text-effect";
+import appImg from "@/app/app.png";
+import Image from "next/image";
+import { BackgroundBeams } from "../ui/background-beams";
+
+const transitionVariants = {
+  item: {
+    hidden: { opacity: 0, filter: "blur(12px)", y: 12 },
+    visible: {
+      opacity: 1,
+      filter: "blur(0px)",
+      y: 0,
+      transition: { type: "spring", bounce: 0.3, duration: 1.5 },
+    },
+  },
+};
 
 export default function HeroSection() {
   return (
-    <section
-      className="relative flex flex-col items-center justify-center py-20"
-      aria-label="Nextjs Starter Kit Hero"
-    >
-      {/* Background gradient */}
-      <div className="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-black bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]">
-        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 dark:bg-blue-500 opacity-20 blur-[100px]"></div>
+    <main className="overflow-hidden">
+      <BackgroundBeams />
+      <div
+        aria-hidden
+        className="absolute inset-0 isolate hidden opacity-65 contain-strict lg:block"
+      >
+        <div className="w-140 h-320 -translate-y-87.5 absolute left-0 top-0 -rotate-45 rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsla(0,0%,85%,.08)_0,hsla(0,0%,55%,.02)_50%,hsla(0,0%,45%,0)_80%)]" />
+        <div className="h-320 absolute left-0 top-0 w-60 -rotate-45 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.06)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)] [translate:5%_-50%]" />
+        <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
       </div>
+      <section>
+        <div className="relative pt-24 md:pt-36">
+          <div className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]"></div>
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
+              <AnimatedGroup variants={transitionVariants}>
+                <Link
+                  href="#link"
+                  className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
+                >
+                  <span className="text-foreground text-sm">
+                    Introducing Support for AI Models
+                  </span>
+                  <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
 
-      <div className="space-y-6 text-center max-w-4xl px-4">
-        {/* Pill badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mx-auto w-fit rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 px-4 py-1 mb-6"
-        >
-          <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
-            <Sparkles className="h-4 w-4" />
-            <span>The Ultimate Next.js Starter Kit</span>
+                  <div className="bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
+                    <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
+                      <span className="flex size-6">
+                        <ArrowRight className="m-auto size-3" />
+                      </span>
+                      <span className="flex size-6">
+                        <ArrowRight className="m-auto size-3" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </AnimatedGroup>
+              <TextEffect
+                preset="fade-in-blur"
+                speedSegment={0.3}
+                as="h1"
+                className="mt-8 text-balance text-6xl md:text-7xl lg:mt-16 xl:text-[5.25rem]"
+              >
+                Modern Solutions for Customer Engagement
+              </TextEffect>
+              <TextEffect
+                per="line"
+                preset="fade-in-blur"
+                speedSegment={0.3}
+                delay={0.5}
+                as="p"
+                className="mx-auto mt-8 max-w-2xl text-balance text-lg"
+              >
+                Highly customizable components for building modern websites and
+                applications that look and feel the way you mean it.
+              </TextEffect>
+              <AnimatedGroup
+                variants={{
+                  container: {
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.05,
+                        delayChildren: 0.75,
+                      },
+                    },
+                  },
+                  ...transitionVariants,
+                }}
+                className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
+              >
+                <Button asChild size="lg" >
+                  <Link href="#link">
+                    <span className="text-nowrap">Start Building</span>
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="ghost"
+                
+                  
+                >
+                  <Link href="#link">
+                    <span className="text-nowrap">Request a demo</span>
+                  </Link>
+                </Button>
+                
+              </AnimatedGroup>
+              <AnimatedGroup>
+                <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
+                  <div
+                    aria-hidden
+                    className="bg-linear-to-b to-background absolute inset-0 z-10 from-transparent from-35%"
+                  />
+                  <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-1 shadow-lg shadow-zinc-950/15 ring-1">
+                    <Image
+                      className="bg-background aspect-15/8 relative hidden rounded-2xl dark:block"
+                      src={appImg}
+                      alt="app screen"
+                      width="2700"
+                      height="1440"
+                    />
+                    <Image
+                      className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border dark:hidden"
+                      src={appImg}
+                      alt="app screen"
+                      width="2700"
+                      height="1440"
+                    />
+                  </div>
+                </div>
+              </AnimatedGroup>
+            </div>
           </div>
-        </motion.div>
-
-        {/* Main heading */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-blue-800 to-gray-900 dark:from-white dark:via-blue-300 dark:to-white animate-gradient-x pb-2"
-        >
-          Build Faster with <br className="hidden sm:block" />
-          Next Starter
-        </motion.h1>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
-        >
-          Launch your SaaS in minutes with our production-ready Next.js starter
-          kit. Everything you need, from auth to payments.
-        </motion.p>
-
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-wrap justify-center items-center gap-4 pt-4"
-        >
-          <Link href="/dashboard">
-            <Button
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-8 h-12"
-            >
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-
-          <Link
-            href="https://discord.gg/HUcHdrrDgY"
-            target="_blank"
-            aria-label="Join Discord (opens in a new tab)"
-          >
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-full px-8 h-12 border-2"
-            >
-              Join Discord
-              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-            </Button>
-          </Link>
-
-          <Link
-            href="https://github.com/michaelshimeles/nextjs14-starter-template"
-            target="_blank"
-            className="flex items-center gap-2 rounded-full px-6 py-2 h-12 border-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="View on GitHub"
-          >
-            <Github className="w-5 h-5" aria-hidden="true" />
-            <span>Star on GitHub</span>
-          </Link>
-        </motion.div>
-      </div>
-    </section>
+        </div>
+      </section>
+    </main>
   );
 }

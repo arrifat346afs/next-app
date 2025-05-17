@@ -10,7 +10,7 @@ import {
   Database, Settings,
   Users
 } from "lucide-react";
-
+export const runtime = "edge"; 
 export default function FinancePage() {
   const { user } = useUser();
 

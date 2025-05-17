@@ -4,7 +4,7 @@ import { api } from '@/convex/_generated/api';
 import { getAuthToken } from '@/lib/auth';
 import { fetchQuery } from 'convex/nextjs';
 import Link from 'next/link';
-
+export const runtime = "edge";
 export default async function SuccessPage() {
   const token = await getAuthToken();
 

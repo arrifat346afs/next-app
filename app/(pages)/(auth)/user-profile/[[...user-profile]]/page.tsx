@@ -1,7 +1,7 @@
 "use client"
 import PageWrapper from "@/components/wrapper/page-wrapper";
 import { UserProfile } from "@clerk/nextjs";
-
+export const runtime = "edge";
 const UserProfilePage = () => {
     return (
         <PageWrapper >

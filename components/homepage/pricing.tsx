@@ -214,13 +214,19 @@ export default function Pricing({ result }: PricingProps) {
     }
   }, [result.items, isYearly]);
 
-  // Filter products based on current interval selection
+  // Filter products based on current interval selection and product name
   const filteredProducts = result.items.filter(item =>
+    // Only show non-archived products
+    !item.isArchived &&
+    // Filter by pricing interval
     item.prices?.some(price =>
       isYearly
         ? price.recurringInterval === 'year'
         : price.recurringInterval === 'month'
-    )
+    ) &&
+    // Only show products from your organization (by name)
+    // You can customize this filter based on your specific products
+    (item.name === "TagPix AI" || item.name.toLowerCase().includes("tagpix"))
   );
 
   return (

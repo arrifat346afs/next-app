@@ -34,8 +34,8 @@ export function AccordionComponent() {
                 {/* Section Header */}
                 <div className="text-center mb-16">
                     {/* Pill badge */}
-                    <div className="mx-auto w-fit rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 px-4 py-1 mb-6">
-                        <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+                    <div className="mx-auto w-fit rounded-full border px-4 py-1 mb-6">
+                        <div className="flex items-center gap-2 text-sm font-medium dark:text-blue-200">
                             <HelpCircle className="h-4 w-4" />
                             <span>FAQ</span>
                         </div>

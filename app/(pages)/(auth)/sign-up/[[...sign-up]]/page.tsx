@@ -1,7 +1,7 @@
 "use client"
 import PageWrapper from "@/components/wrapper/page-wrapper";
 import { SignUp } from "@clerk/nextjs";
-
+export const runtime = "edge";
 export default function SignUpPage() {
     return (
         <PageWrapper >

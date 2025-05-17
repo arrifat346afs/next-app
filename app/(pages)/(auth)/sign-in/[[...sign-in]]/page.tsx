@@ -1,6 +1,6 @@
 import PageWrapper from "@/components/wrapper/page-wrapper";
 import { SignIn } from "@clerk/nextjs";
-
+export const runtime = "edge";
 export default function SignInPage() {
     return (
         <PageWrapper >

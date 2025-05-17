@@ -3,7 +3,7 @@ import Pricing from "@/components/homepage/pricing";
 import PageWrapper from "@/components/wrapper/page-wrapper";
 import { polar } from "@/lib/polar";
 import { Check, DollarSign } from "lucide-react";
-
+export const runtime = "edge";
 export default async function PricingPage() {
   const features = [
     "Authentication & Authorization",
