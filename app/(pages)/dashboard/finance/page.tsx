@@ -8,9 +8,10 @@ import { useAction, useQuery } from "convex/react";
 import {
   CreditCard,
   Database, Settings,
-  Users
+  Users, BarChart
 } from "lucide-react";
-export const runtime = "edge"; 
+import { UserModelUsageChart } from "../_components/user-model-usage-chart";
+
 export default function FinancePage() {
   const { user } = useUser();
 
@@ -37,11 +38,11 @@ export default function FinancePage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Finance Overview</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Account Overview</h1>
         <p className="text-muted-foreground mt-2">
-          Track your revenue, expenses, and financial metrics
+          Manage your account and subscription details.
         </p>
-        <Button className="mt-3" onClick={handleManageSubscription}>Manage Subscription</Button>
+
       </div>
 
       {/* Account Information Grid */}
@@ -119,89 +120,33 @@ export default function FinancePage() {
                   <span className="text-muted-foreground">Next Billing:</span>
                   <span className="font-medium">{new Date(subscription?.currentPeriodEnd!).toLocaleDateString()}</span>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Database User Info Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Database Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!userData ? (
-              <div className="space-y-4">
-                <Skeleton className="h-4 w-[200px]" />
-                <Skeleton className="h-4 w-[180px]" />
-                <Skeleton className="h-4 w-[160px]" />
-                <Skeleton className="h-4 w-[280px]" />
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Name:</span>
-                  <span className="font-medium">{userData.name}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Email:</span>
-                  <span className="font-medium">{userData.email}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span className="font-medium">{new Date(userData.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground">Database ID:</span>
-                  <span className="block font-medium text-sm break-all">{userData._id}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Subscription Details Extended Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Additional Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!subscription ? (
-              <div className="space-y-4">
-                <Skeleton className="h-4 w-[280px]" />
-                <Skeleton className="h-4 w-[260px]" />
-                <Skeleton className="h-4 w-[180px]" />
-                <Skeleton className="h-4 w-[150px]" />
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                <div className="space-y-1">
-                  <span className="text-muted-foreground">Customer ID:</span>
-                  <span className="block font-medium text-sm break-all">{subscription.customerId}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground">Polar ID:</span>
-                  <span className="block font-medium text-sm break-all">{subscription?.polarId}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Started At:</span>
-                  <span className="font-medium">{new Date(subscription?.startedAt!).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Auto Renew:</span>
-                  <span className="font-medium">{subscription?.cancelAtPeriodEnd ? 'No' : 'Yes'}</span>
-                </div>
+                <Button className="mt-3" onClick={handleManageSubscription}>Manage Subscription</Button>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* User Model Usage Chart */}
+      {user && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart className="h-5 w-5" />
+              Your Model Usage
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[350px]">
+            {!user ? (
+              <div className="space-y-4 h-full flex items-center justify-center">
+                <Skeleton className="h-[300px] w-full" />
+              </div>
+            ) : (
+              <UserModelUsageChart userId={user.id} />
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

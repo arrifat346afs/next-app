@@ -10,8 +10,9 @@ import {
 } from "@/app/(pages)/dashboard/_components/chart";
 // import { ChartTooltip } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 // Define types for our data
 interface ModelUsageData {
@@ -37,68 +38,13 @@ export function AIModelComparisonChart() {
   const [isUsingSampleData, setIsUsingSampleData] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [dataReceived, setDataReceived] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Fetch data from the API
-  const fetchModelData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Use the full URL with localhost for development
-      const apiUrl =
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3000/api/model-usage"
-          : "/api/model-usage";
-
-      console.log("Fetching data from:", apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // Include credentials for cookies if needed
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const result: ApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Failed to fetch model data");
-      }
-
-      console.log("Received data:", result.data);
-
-      // Process the data for the chart
-      const processedData = processModelData(result.data);
-      setChartData(
-        processedData.length > 0 ? processedData : generateEmptyData()
-      );
-      setIsUsingSampleData(processedData.length === 0);
-      setLastUpdated(new Date());
-
-      return processedData;
-    } catch (error) {
-      console.error("Error fetching model data:", error);
-      setError(error instanceof Error ? error.message : "Unknown error");
-      setChartData(generateEmptyData());
-      setIsUsingSampleData(true);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const hasInitializedRef = useRef(false);
 
   // Process and organize data for the chart
-  const processModelData = (modelMetrics: ModelMetric[]) => {
+  const processModelData = useCallback((modelMetrics: ModelMetric[]) => {
     try {
       // Check if we have any real data
       const hasRealData = modelMetrics.length > 0;
@@ -139,10 +85,10 @@ export function AIModelComparisonChart() {
       console.error("Error processing model data:", error);
       return [];
     }
-  };
+  }, []);
 
   // Generate empty data with a message
-  const generateEmptyData = () => {
+  const generateEmptyData = useCallback(() => {
     return [
       {
         date: new Date(),
@@ -150,10 +96,70 @@ export function AIModelComparisonChart() {
         "No Data Available": 0,
       },
     ];
-  };
+  }, []);
+
+  // Fetch data from the API
+  const fetchModelData = useCallback(async () => {
+    // Prevent multiple fetches
+    if (isLoading) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Use the full URL with localhost for development
+      const apiUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/api/model-usage"
+          : "https://nextjs-starter-kit-kappa-three.vercel.app/api/model-usage";
+
+      console.log("Fetching data from:", apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // Include credentials for cookies if needed
+        credentials: "include",
+        // Add cache control to prevent caching
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const result: ApiResponse = await response.json();
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || "Failed to fetch model data");
+      }
+
+      console.log("Received data:", result.data);
+
+      // Process the data for the chart
+      const processedData = processModelData(result.data);
+      setChartData(
+        processedData.length > 0 ? processedData : generateEmptyData()
+      );
+      setIsUsingSampleData(processedData.length === 0);
+      setLastUpdated(new Date());
+
+      return processedData;
+    } catch (error) {
+      console.error("Error fetching model data:", error);
+      setError(error instanceof Error ? error.message : "Unknown error");
+      setChartData(generateEmptyData());
+      setIsUsingSampleData(true);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, [generateEmptyData, processModelData, isLoading]);
 
   // Function to add new data via API
-  const addModelData = async (modelName: string, imageCount: number) => {
+  const addModelData = useCallback(async (modelName: string, imageCount: number) => {
     try {
       // Use the full URL with localhost for development
       const apiUrl =
@@ -209,16 +215,16 @@ export function AIModelComparisonChart() {
       console.error("Error adding model data:", error);
       setError(error instanceof Error ? error.message : "Unknown error");
     }
-  };
+  }, [fetchModelData]);
 
   // Clear all data (for testing purposes)
-  const clearAllData = async () => {
+  const clearAllData = useCallback(async () => {
     try {
       // Use the full URL with localhost for development
       const apiUrl =
         process.env.NODE_ENV === "development"
           ? "http://localhost:3000/api/model-usage"
-          : "/api/model-usage";
+          : "https://nextjs-starter-kit-kappa-three.vercel.app/api/model-usage";
 
       console.log("Clearing data from:", apiUrl);
 
@@ -251,50 +257,50 @@ export function AIModelComparisonChart() {
       console.error("Error clearing model data:", error);
       setError(error instanceof Error ? error.message : "Unknown error");
     }
-  };
+  }, [generateEmptyData]);
 
-  // Set up polling and expose API functions
+  // Set up API functions and initial data fetch - only once
   useEffect(() => {
-    // Expose functions to window object for external applications
-    // @ts-ignore
-    window.addAIModelData = addModelData;
-    // @ts-ignore
-    window.clearAIModelData = clearAllData;
+    // Only fetch data once when the component mounts
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
 
-    // Initial data fetch
-    fetchModelData();
+      // Expose functions to window object for external applications
+      // @ts-ignore
+      window.addAIModelData = addModelData;
+      // @ts-ignore
+      window.clearAIModelData = clearAllData;
+      // @ts-ignore
+      window.refreshAIModelData = fetchModelData;
 
-    // 60minits
-    pollingIntervalRef.current = setInterval(() => {
+      // Initial data fetch only when component mounts
       fetchModelData();
-    }, 300000);
 
-    // Set up event listener for messages from desktop app
-    const handleExternalData = (event: MessageEvent) => {
-      if (event.data && event.data.type === "ai-model-data") {
-        const { modelName, imageCount } = event.data;
-        addModelData(modelName, imageCount);
-      }
-    };
+      // Set up event listener for messages from desktop app
+      const handleExternalData = (event: MessageEvent) => {
+        if (event.data && event.data.type === "ai-model-data") {
+          const { modelName, imageCount } = event.data;
+          addModelData(modelName, imageCount);
+        }
+      };
 
-    window.addEventListener("message", handleExternalData);
+      window.addEventListener("message", handleExternalData);
 
-    return () => {
-      // Clean up
-      // @ts-ignore
-      delete window.addAIModelData;
-      // @ts-ignore
-      delete window.clearAIModelData;
-      window.removeEventListener("message", handleExternalData);
+      return () => {
+        // Clean up
+        // @ts-ignore
+        delete window.addAIModelData;
+        // @ts-ignore
+        delete window.clearAIModelData;
+        // @ts-ignore
+        delete window.refreshAIModelData;
+        window.removeEventListener("message", handleExternalData);
 
-      if (notificationTimeoutRef.current) {
-        clearTimeout(notificationTimeoutRef.current);
-      }
-
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
+        if (notificationTimeoutRef.current) {
+          clearTimeout(notificationTimeoutRef.current);
+        }
+      };
+    }
   }, [addModelData, clearAllData, fetchModelData]);
 
   // Get unique model names from the data
@@ -384,8 +390,8 @@ export function AIModelComparisonChart() {
             </div>
           </div>
         )}
-
-        <ResponsiveContainer width="100%" height="100%">
+        <Card className="h-[300px] relative p-2">
+        <ResponsiveContainer width="100%" height="100%" >
           <LineChart data={chartData}>
             <XAxis
               dataKey="formattedDate"
@@ -455,12 +461,13 @@ export function AIModelComparisonChart() {
             />
           </LineChart>
         </ResponsiveContainer>
+        </Card>
       </div>
 
 
 
       {/* Testing controls - only visible in development */}
-      {process.env.NODE_ENV === "development" && (
+      {/* {process.env.NODE_ENV === "development" && (
         <div className="mt-4 p-2 border border-dashed rounded-md">
           <div className="text-xs font-medium mb-2">
             Development Testing Controls
@@ -512,7 +519,7 @@ export function AIModelComparisonChart() {
             </ul>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
