@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { useAction } from "convex/react";
-import { CheckCircle2, DollarSign } from "lucide-react";
+import { Check, CheckCircle2, DollarSign } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -156,31 +156,34 @@ const PricingCard = ({
       : "Get Started";
 
   return (
-    <Card className="relative w-full max-w-sm mx-4 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+    <Card className="relative w-full max-w-sm mx-4 transition-all duration-300 hover:scale-105 hover:shadow-lg bg-transparent border-2">
       <CardHeader className="space-y-2">
         <CardTitle className="text-2xl font-bold">{name}</CardTitle>
         <CardDescription className="text-base">
           {description}
         </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
         <div className="flex items-baseline gap-2">
           <span className="text-5xl font-bold tracking-tight">
             {currency === 'USD' ? '$' : currency} {priceAmount}
           </span>
           <span className="text-lg text-muted-foreground">/{interval}</span>
         </div>
+      </CardHeader>
 
-        <div className="space-y-3">
-          {benefits.map((benefit, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-blue-500" />
-              <p className="text-sm text-muted-foreground">{benefit.description}</p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
+                        <CardContent className="space-y-4">
+                            <hr className="border-dashed" />
+
+                            <ul className="list-outside space-y-3 text-sm">
+                                {['Basic Analytics Dashboard', '5GB Cloud Storage', 'Email and Chat Support'].map((item, index) => (
+                                    <li
+                                        key={index}
+                                        className="flex items-center gap-2">
+                                        <Check className="size-3" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
 
       <CardFooter className="pt-4">
         <Button

@@ -123,6 +123,20 @@ export const getUserSubscription = query({
     }
 });
 
+export const getSubscriptionByUserId = query({
+    args: { userId: v.string() },
+    handler: async (ctx, args) => {
+        // Query subscription by userId
+        // This is used by the API route and doesn't require authentication
+        const subscription = await ctx.db
+            .query("subscriptions")
+            .withIndex("userId", (q) => q.eq("userId", args.userId))
+            .first();
+
+        return subscription;
+    }
+});
+
 export const subscriptionStoreWebhook = mutation({
     args: {
         body: v.any(),
@@ -276,7 +290,7 @@ export const paymentWebhook = httpAction(async (ctx, request) => {
 
     try {
         const body = await request.json();
-        
+
 
         // track events and based on events store data
         await ctx.runMutation(api.subscriptions.subscriptionStoreWebhook, {

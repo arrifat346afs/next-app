@@ -128,7 +128,7 @@ export default function NavBar() {
             <Link href="/sign-in" prefetch={true}>
               <Button
                 variant="default"
-                className="bg-blue-600 hover:bg-blue-500 text-white"
+               
               >
                 Sign in
               </Button>

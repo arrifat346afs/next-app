@@ -68,5 +68,13 @@ export default defineSchema({
     })
         .index("type", ["type"])
         .index("polarEventId", ["polarEventId"]),
-
+    modelUsage: defineTable({
+        modelName: v.string(),
+        imageCount: v.number(),
+        timestamp: v.number(),
+        userId: v.optional(v.string()), // Add userId field to track which user used the model
+    })
+        .index("by_timestamp", ["timestamp"])
+        .index("by_model", ["modelName"])
+        .index("by_user", ["userId"]), // Add index for querying by user
 })

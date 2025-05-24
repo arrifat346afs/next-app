@@ -96,11 +96,9 @@ export async function GET(request: NextRequest) {
       }
 
       // Check if the user has an active subscription and get subscription details
-      const subscriptions = await convex.query(
-        api.subscriptions.getAllSubscriptions
-      );
-      const userSubscription = subscriptions.find(
-        (s: any) => s.userId === user.tokenIdentifier
+      const userSubscription = await convex.query(
+        api.subscriptions.getSubscriptionByUserId,
+        { userId: user.tokenIdentifier }
       );
       const hasActiveSubscription = userSubscription?.status === "active";
 
