@@ -104,25 +104,25 @@ export const addModelUsageData = mutation({
 
       // Create a duplicate entry with a different userId format for testing
       // This helps ensure data can be found regardless of userId format
-      if (userId && !userId.startsWith("test_")) {
-        let alternateUserId;
-        if (userId.startsWith("user_")) {
-          alternateUserId = userId.replace("user_", "");
-        } else {
-          alternateUserId = `user_${userId}`;
-        }
+      // if (userId && !userId.startsWith("test_")) {
+      //   let alternateUserId;
+      //   if (userId.startsWith("user_")) {
+      //     alternateUserId = userId.replace("user_", "");
+      //   } else {
+      //     alternateUserId = `user_${userId}`;
+      //   }
 
-        console.log(
-          `Convex: Also creating entry with alternate userId: ${alternateUserId}`
-        );
+      //   console.log(
+      //     `Convex: Also creating entry with alternate userId: ${alternateUserId}`
+      //   );
 
-        const alternateEntry = {
-          ...newEntry,
-          userId: alternateUserId,
-        };
+      //   const alternateEntry = {
+      //     ...newEntry,
+      //     userId: alternateUserId,
+      //   };
 
-        await ctx.db.insert("modelUsage", alternateEntry);
-      }
+      //   await ctx.db.insert("modelUsage", alternateEntry);
+      // }
 
       return {
         success: true,
