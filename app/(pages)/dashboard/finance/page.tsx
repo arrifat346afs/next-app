@@ -8,9 +8,11 @@ import { useAction, useQuery } from "convex/react";
 import {
   CreditCard,
   Database, Settings,
-  Users, BarChart
+  Users, BarChart,
+  Image
 } from "lucide-react";
 import { UserModelUsageChart } from "../_components/user-model-usage-chart";
+import { Progress } from "@/components/ui/progress";
 
 export default function FinancePage() {
   const { user } = useUser();
@@ -21,6 +23,21 @@ export default function FinancePage() {
 
   const subscription = useQuery(api.subscriptions.getUserSubscription);
   const getDashboardUrl = useAction(api.subscriptions.getUserDashboardUrl);
+
+  // Check if user is on free tier:
+  // - No subscription
+  // - Subscription amount is 0
+  // - Subscription status is not active
+  const isFreeUser = !subscription ||
+    subscription.amount === 0 ||
+    subscription.status !== 'active';
+
+  // Only free users have a limit
+  const FREE_USER_LIMIT = 100;
+
+  const currentImageCount = useQuery(api.modelUsage.getCurrentImageCount,
+    user?.id ? { userId: user.id } : "skip"
+  ) ?? 0;
 
   const handleManageSubscription = async () => {
     try {
@@ -33,6 +50,20 @@ export default function FinancePage() {
     } catch (error) {
       console.error("Error getting dashboard URL:", error);
     }
+  };
+
+  // Helper function to format the usage display
+  const formatUsageDisplay = () => {
+    if (!isFreeUser) {
+      return `${currentImageCount} / Unlimited`;
+    }
+    return `${currentImageCount} / ${FREE_USER_LIMIT}`;
+  };
+
+  // Helper function to calculate progress percentage for free users
+  const calculateProgress = () => {
+    if (!isFreeUser) return 0; // No progress bar for pro users
+    return Math.min((currentImageCount / FREE_USER_LIMIT) * 100, 100);
   };
 
   return (
@@ -77,9 +108,31 @@ export default function FinancePage() {
                   <span className="text-muted-foreground">Created:</span>
                   <span className="font-medium">{new Date(user?.createdAt || "").toLocaleDateString()}</span>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 flex justify-between">
                   <span className="text-muted-foreground">User ID:</span>
                   <span className="block font-medium text-sm break-all">{user?.id}</span>
+                </div>
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Image Processing
+                    </span>
+                    <span className="font-medium">{formatUsageDisplay()}</span>
+                  </div>
+                  {isFreeUser && (
+                    <>
+                      <Progress
+                        value={calculateProgress()}
+                        className="h-2"
+                      />
+                      {currentImageCount >= FREE_USER_LIMIT && (
+                        <p className="text-sm text-red-500">
+                          You've reached your image processing limit. Upgrade to Pro for unlimited processing.
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -101,6 +154,29 @@ export default function FinancePage() {
                 <Skeleton className="h-4 w-[150px]" />
                 <Skeleton className="h-4 w-[200px]" />
                 <Skeleton className="h-4 w-[170px]" />
+              </div>
+            ) : isFreeUser ? (
+              <div className="grid gap-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Plan:</span>
+                  <span className="font-medium">Free Plan</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className="font-medium">Active</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Features:</span>
+                  <span className="font-medium">Basic Access</span>
+                </div>
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upgrade to Pro to unlock unlimited image processing, priority support, and advanced features.
+                  </p>
+                  <Button className="w-full" onClick={() => window.location.href = '/pricing'}>
+                    Upgrade to Pro
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="grid gap-4">

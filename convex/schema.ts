@@ -67,14 +67,15 @@ export default defineSchema({
         data: v.any(),
     })
         .index("type", ["type"])
-        .index("polarEventId", ["polarEventId"]),
-    modelUsage: defineTable({
+        .index("polarEventId", ["polarEventId"]),    modelUsage: defineTable({
         modelName: v.string(),
         imageCount: v.number(),
         timestamp: v.number(),
-        userId: v.optional(v.string()), // Add userId field to track which user used the model
+        userId: v.string(), // Required field to track which user used the model
+        usageDate: v.string(), // Date in YYYY-MM-DD format for daily tracking
     })
         .index("by_timestamp", ["timestamp"])
         .index("by_model", ["modelName"])
-        .index("by_user", ["userId"]), // Add index for querying by user
+        .index("by_user", ["userId"])
+        .index("by_user_model_date", ["userId", "modelName", "usageDate"]), // Composite index for upsert operations
 })

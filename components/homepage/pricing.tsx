@@ -22,7 +22,7 @@ interface Price {
   id: string;
   priceAmount: number;
   priceCurrency: string;
-  recurringInterval: 'month' | 'year';
+  recurringInterval: "month" | "year";
   productId?: string;
 }
 
@@ -61,7 +61,7 @@ type PricingSwitchProps = {
 };
 
 type PricingCardProps = {
-  user: ReturnType<typeof useUser>['user'];
+  user: ReturnType<typeof useUser>["user"];
   isYearly?: boolean;
   name: string;
   prices: Price[];
@@ -86,9 +86,7 @@ const PricingHeader = ({ title, subtitle }: PricingHeaderProps) => (
     <h2 className="text-3xl md:text-4xl font-bold bg-clip-text pb-2">
       {title}
     </h2>
-    <p className=" mt-4 max-w-2xl mx-auto">
-      {subtitle}
-    </p>
+    <p className=" mt-4 max-w-2xl mx-auto">{subtitle}</p>
   </div>
 );
 
@@ -107,6 +105,89 @@ const PricingSwitch = ({ onSwitch }: PricingSwitchProps) => (
   </div>
 );
 
+const FreePricingCard = ({
+  user,
+  isYearly,
+  name,
+  prices,
+  description,
+  benefits,
+}: PricingCardProps) => {
+  const router = useRouter();
+  const getProCheckoutUrl = useAction(
+    api.subscriptions.getProOnboardingCheckoutUrl
+  );
+
+  const currentPrice =
+    prices.find((price) =>
+      isYearly
+        ? price.recurringInterval === "year"
+        : price.recurringInterval === "month"
+    ) || prices[0];
+
+  const priceAmount = currentPrice
+    ? (currentPrice.priceAmount / 100).toFixed(2)
+    : "0";
+  const currency = currentPrice?.priceCurrency?.toUpperCase() || "USD";
+  const interval = isYearly ? "year" : "month";
+
+  const handleCheckout = async () => {
+    if (!currentPrice) return;
+
+    try {
+      const checkout = await getProCheckoutUrl({
+        priceId: currentPrice.id,
+      });
+      window.location.href = checkout;
+    } catch (error) {
+      console.error("Failed to get checkout URL:", error);
+    }
+  };
+    const handleButtonClick = () => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+    handleCheckout();
+  };
+
+  return (
+    <Card className="relative w-full max-w-sm mx-4 transition-all duration-300 hover:scale-105 hover:shadow-lg bg-transparent border-2">
+      <CardHeader className="space-y-2">
+        <CardTitle className="text-2xl font-bold">Free</CardTitle>
+        <CardDescription className="text-base">{description}</CardDescription>
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-bold tracking-tight">$0</span>
+          <span className="text-lg text-muted-foreground">/forever</span>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <hr className="border-dashed" />
+
+        <ul className="list-outside space-y-3 text-sm">
+          {["Basic AI Model Access", "1GB Cloud Storage", "Community Support", "Limited API Calls", "Basic Analytics"].map((item, index) => (
+            <li key={index} className="flex items-center gap-2">
+              <Check className="size-3" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+
+      <CardFooter className="pt-4">
+        <Button
+          onClick={handleButtonClick}
+          variant="outline"
+          className="w-full text-base font-semibold"
+        >
+          {!user ? "Sign in to continue" : "Get Started"}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
 const PricingCard = ({
   user,
   isYearly,
@@ -116,17 +197,22 @@ const PricingCard = ({
   benefits,
 }: PricingCardProps) => {
   const router = useRouter();
-  const getProCheckoutUrl = useAction(api.subscriptions.getProOnboardingCheckoutUrl);
+  const getProCheckoutUrl = useAction(
+    api.subscriptions.getProOnboardingCheckoutUrl
+  );
 
-  const currentPrice = prices.find(price =>
-    isYearly
-      ? price.recurringInterval === 'year'
-      : price.recurringInterval === 'month'
-  ) || prices[0];
+  const currentPrice =
+    prices.find((price) =>
+      isYearly
+        ? price.recurringInterval === "year"
+        : price.recurringInterval === "month"
+    ) || prices[0];
 
-  const priceAmount = currentPrice ? (currentPrice.priceAmount / 100).toFixed(2) : '0';
-  const currency = currentPrice?.priceCurrency?.toUpperCase() || 'USD';
-  const interval = isYearly ? 'year' : 'month';
+  const priceAmount = currentPrice
+    ? (currentPrice.priceAmount / 100).toFixed(2)
+    : "0";
+  const currency = currentPrice?.priceCurrency?.toUpperCase() || "USD";
+  const interval = isYearly ? "year" : "month";
 
   const handleCheckout = async () => {
     if (!currentPrice) return;
@@ -156,40 +242,35 @@ const PricingCard = ({
       : "Get Started";
 
   return (
-    <Card className="relative w-full max-w-sm mx-4 transition-all duration-300 hover:scale-105 hover:shadow-lg bg-transparent border-2">
+    <Card className="relative w-full max-w-sm mx-4 transition-all duration-300 hover:scale-105 hover:shadow-lg">
       <CardHeader className="space-y-2">
         <CardTitle className="text-2xl font-bold">{name}</CardTitle>
-        <CardDescription className="text-base">
-          {description}
-        </CardDescription>
+        <CardDescription className="text-base">{description}</CardDescription>
         <div className="flex items-baseline gap-2">
           <span className="text-5xl font-bold tracking-tight">
-            {currency === 'USD' ? '$' : currency} {priceAmount}
+            {currency === "USD" ? "$" : currency} {priceAmount}
           </span>
           <span className="text-lg text-muted-foreground">/{interval}</span>
         </div>
       </CardHeader>
 
-                        <CardContent className="space-y-4">
-                            <hr className="border-dashed" />
+      <CardContent className="space-y-4">
+        <hr className="border-dashed" />
 
-                            <ul className="list-outside space-y-3 text-sm">
-                                {['Basic Analytics Dashboard', '5GB Cloud Storage', 'Email and Chat Support'].map((item, index) => (
-                                    <li
-                                        key={index}
-                                        className="flex items-center gap-2">
-                                        <Check className="size-3" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
+        <ul className="list-outside space-y-3 text-sm">
+          {["Advanced AI Model Access", "Unlimited API Calls", "25GB Cloud Storage", "Priority Email & Chat Support", "Advanced Analytics Dashboard", "Custom Model Training", "API Key Access", "Dedicated Account Manager"].map((item, index) => (
+            <li key={index} className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-blue-500" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
 
       <CardFooter className="pt-4">
         <Button
           onClick={handleButtonClick}
-          className="w-full text-base font-semibold"
-        >
+          className="w-full text-base font-semibold">
           {buttonText}
         </Button>
       </CardFooter>
@@ -202,12 +283,13 @@ export default function Pricing({ result }: PricingProps) {
   const [hasYearlyPlans, setHasYearlyPlans] = useState(false);
   const { user } = useUser();
 
-  const togglePricingPeriod = (value: string) => setIsYearly(parseInt(value) === 1);
+  const togglePricingPeriod = (value: string) =>
+    setIsYearly(parseInt(value) === 1);
 
   useEffect(() => {
     // Check if any products have yearly pricing
-    const hasYearly = result.items.some(product =>
-      product.prices.some(price => price.recurringInterval === 'year')
+    const hasYearly = result.items.some((product) =>
+      product.prices.some((price) => price.recurringInterval === "year")
     );
     setHasYearlyPlans(hasYearly);
 
@@ -218,18 +300,22 @@ export default function Pricing({ result }: PricingProps) {
   }, [result.items, isYearly]);
 
   // Filter products based on current interval selection and product name
-  const filteredProducts = result.items.filter(item =>
-    // Only show non-archived products
-    !item.isArchived &&
-    // Filter by pricing interval
-    item.prices?.some(price =>
-      isYearly
-        ? price.recurringInterval === 'year'
-        : price.recurringInterval === 'month'
-    ) &&
-    // Only show products from your organization (by name)
-    // You can customize this filter based on your specific products
-    (item.name === "TagPix AI" || item.name.toLowerCase().includes("tagpix"))
+  const filteredProducts = result.items.filter(
+    (item) =>
+      // Only show non-archived products
+      !item.isArchived &&
+      // Filter by pricing interval
+      item.prices?.some((price) =>
+        isYearly
+          ? price.recurringInterval === "year"
+          : price.recurringInterval === "month"
+      ) &&
+      // Only show products from your organization (by name)
+      // You can customize this filter based on your specific products
+      (item.name === "Pro" || 
+        item.name === "Free" ||
+        item.name.toLowerCase().includes("pro") ||
+        item.name.toLowerCase().includes("free"))
   );
 
   return (
@@ -253,17 +339,29 @@ export default function Pricing({ result }: PricingProps) {
           viewport={{ once: true }}
           className="flex flex-col md:flex-row justify-center items-center gap-8 mt-8"
         >
-          {filteredProducts.map((item) => (
-            <PricingCard
-              key={item.id}
-              user={user}
-              name={item.name}
-              description={item.description || ''}
-              prices={item.prices}
-              benefits={item.benefits}
-              isYearly={isYearly}
-            />
-          ))}
+          {filteredProducts.map((item) => 
+            item.name === "Free" ? (
+              <FreePricingCard
+                key={item.id}
+                user={user}
+                name={item.name}
+                description={item.description || ""}
+                prices={item.prices}
+                benefits={item.benefits}
+                isYearly={isYearly}
+              />
+            ) : (
+              <PricingCard
+                key={item.id}
+                user={user}
+                name={item.name}
+                description={item.description || ""}
+                prices={item.prices}
+                benefits={item.benefits}
+                isYearly={isYearly}
+              />
+            )
+          )}
         </motion.div>
       </div>
     </section>

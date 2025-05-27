@@ -1,5 +1,7 @@
 "use client";
 
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 import {
   Line,
   LineChart,
@@ -8,7 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "@/app/(pages)/dashboard/_components/chart";
-import { Badge } from "@/components/ui/badge";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+// import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useEffect, useState, useRef, useCallback } from "react";
 
@@ -188,41 +192,13 @@ export function UserModelUsageChart({ userId }: UserModelUsageChartProps) {
       setIsLoading(true);
       setError(null);
 
-      // Use the full URL with localhost for development
-      // Don't use test data by default
-      const apiUrl =
-        process.env.NODE_ENV === "development"
-          ? `http://localhost:3000/api/model-usage?userId=${userId}`
-          : `https://nextjs-starter-kit-kappa-three.vercel.app/api/model-usage?userId=${userId}`;
+      console.log("Fetching user data directly from Convex with userId:", userId);
 
-      console.log("Fetching user data from:", apiUrl);
-      console.log("Current userId:", userId);
-
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        cache: "no-store",
+      const result = await convex.query(api.modelUsage.getUserModelUsageData, {
+        userId: userId,
       });
 
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      // Log the raw response for debugging
-      const responseText = await response.text();
-      console.log("Raw API response:", responseText);
-
-      // Parse the response text to JSON
-      let result: ApiResponse;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Error parsing API response:", parseError);
-        throw new Error("Failed to parse API response");
-      }
+      console.log("Convex query result:", result);
 
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch model data");
@@ -230,7 +206,7 @@ export function UserModelUsageChart({ userId }: UserModelUsageChartProps) {
 
       // Ensure we have an array of data
       const data = Array.isArray(result.data) ? result.data : [];
-      console.log(`Received ${data.length} data points from API`);
+      console.log(`Received ${data.length} data points from Convex`);
 
       // Log first few items if available
       if (data.length > 0) {
@@ -243,7 +219,7 @@ export function UserModelUsageChart({ userId }: UserModelUsageChartProps) {
 
       // If no data, use empty data
       if (data.length === 0) {
-        console.log("No data received from API, using empty data");
+        console.log("No data received from Convex, using empty data");
         setChartData(generateEmptyData());
         setIsUsingSampleData(true);
         setLastUpdated(new Date());
@@ -282,7 +258,7 @@ export function UserModelUsageChart({ userId }: UserModelUsageChartProps) {
 
       return processedData;
     } catch (error) {
-      console.error("Error fetching user model data:", error);
+      console.error("Error fetching user model data from Convex:", error);
       setError(error instanceof Error ? error.message : "Unknown error");
       setChartData(generateEmptyData());
       setIsUsingSampleData(true);

@@ -3,6 +3,27 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 export const runtime = 'nodejs';
 
+// Function to verify the API key
+async function verifyApiKey(request: NextRequest): Promise<NextResponse | null> {
+  const apiKey = request.headers.get("x-api-key");
+
+  if (!apiKey) {
+    return NextResponse.json(
+      { success: false, error: "Missing API key" },
+      { status: 401, headers: corsHeaders() }
+    );
+  }
+
+  if (apiKey !== process.env.DESKTOP_API_KEY) {
+    return NextResponse.json(
+      { success: false, error: "Invalid API key" },
+      { status: 403, headers: corsHeaders() }
+    );
+  }
+
+  return null; // API key is valid
+}
+
 // Define types
 interface ModelUsageData {
   modelName: string;
@@ -18,7 +39,7 @@ function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key",
   };
 }
 
@@ -35,6 +56,7 @@ export async function OPTIONS() {
  * Enhanced with better debugging and error handling
  */
 export async function GET(request: NextRequest) {
+
   try {
     // Check if a userId is provided in the query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -267,13 +289,19 @@ export async function GET(request: NextRequest) {
  * POST handler to add new model usage data from the Electron app
  * This endpoint receives data from the local Electron app and stores it in the database
  */
+
 export async function POST(request: NextRequest) {
+  // Verify API key
+  const apiKeyCheck = await verifyApiKey(request);
+  if (apiKeyCheck) {
+    return apiKeyCheck;
+  }
+
   try {
     // Get the raw request body for debugging
     const rawBody = await request.text();
     console.log("Raw request body from Electron app:", rawBody);
 
-    // Parse the JSON body
     let body;
     try {
       body = JSON.parse(rawBody);
@@ -312,7 +340,7 @@ export async function POST(request: NextRequest) {
           // Extract data from the item
           const itemModelName = item.modelName || item.model;
           const itemImageCount = item.imageCount || item.count;
-          const itemUserId = item.userId || item.user_id || item.email;
+          const itemUserId = item.userId;
 
           if (!itemModelName || !itemImageCount) {
             console.error("Invalid item in array:", item);
@@ -397,7 +425,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the user ID from various possible sources
-    userId = body.userId || body.user_id || body.email;
+    userId = body.userId;
 
     // If no userId in the body, try to get from headers
     if (!userId) {
@@ -490,7 +518,13 @@ export async function POST(request: NextRequest) {
 /**
  * DELETE handler to clear all model usage data
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  // Verify API key
+  const apiKeyCheck = await verifyApiKey(request);
+  if (apiKeyCheck) {
+    return apiKeyCheck;
+  }
+
   try {
     // Clear data from Convex
     const result = await convex.mutation(api.modelUsage.clearModelUsageData);

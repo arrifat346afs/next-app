@@ -21,10 +21,11 @@ export default async function Home() {
     items: data?.result?.items.filter(product =>
       // Keep only products that are not archived
       !product.isArchived &&
-      // If you know your organization ID, you can hardcode it here
-      // Example: product.organizationId === "your-org-id"
-      // Or filter by product name if you know which products you want to show
-      (product.name === "TagPix AI" || product.name.toLowerCase().includes("tagpix"))
+      // Add multiple product names using OR (||) operators
+      (product.name === "Pro" || 
+       product.name === "Free" ||
+       product.name.toLowerCase().includes("pro") ||
+       product.name.toLowerCase().includes("free"))
     ) || []
   };
 

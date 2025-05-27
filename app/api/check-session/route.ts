@@ -34,6 +34,9 @@ function formatDate(timestamp: number | undefined): string | null {
   return new Date(timestamp).toISOString();
 }
 
+// Constants for user limits
+const FREE_USER_IMAGE_LIMIT = 100;
+
 // Handle OPTIONS requests for CORS preflight
 export async function OPTIONS() {
   return new Response(null, {
@@ -100,7 +103,18 @@ export async function GET(request: NextRequest) {
         api.subscriptions.getSubscriptionByUserId,
         { userId: user.tokenIdentifier }
       );
+
+      // Get user's current image processing count
+      const currentImageCount = await convex.query(
+        api.modelUsage.getCurrentImageCount,
+        { userId: user.tokenIdentifier }
+      );
+
       const hasActiveSubscription = userSubscription?.status === "active";
+      const isFreeUser =
+        !userSubscription ||
+        userSubscription.amount === 0 ||
+        userSubscription.status !== "active";
 
       // Prepare subscription details
       const subscriptionDetails = userSubscription
@@ -123,7 +137,21 @@ export async function GET(request: NextRequest) {
         image: user.image,
       };
 
-      // Return enhanced user status with subscription details and profile
+      // Prepare usage limits information
+      const usageLimits = {
+        plan: isFreeUser ? "free" : "pro",
+        imageProcessing: {
+          current: currentImageCount,
+          limit: isFreeUser ? FREE_USER_IMAGE_LIMIT : null, // null indicates unlimited
+          remaining: isFreeUser
+            ? Math.max(0, FREE_USER_IMAGE_LIMIT - currentImageCount)
+            : null, // null indicates unlimited
+          isLimitReached:
+            isFreeUser && currentImageCount >= FREE_USER_IMAGE_LIMIT,
+        },
+      };
+
+      // Return enhanced user status with subscription details, profile, and limits
       return NextResponse.json(
         {
           isAuthenticated: true,
@@ -132,6 +160,7 @@ export async function GET(request: NextRequest) {
           userId: user.tokenIdentifier,
           subscription: subscriptionDetails,
           profile: userProfile,
+          usageLimits: usageLimits,
         },
         {
           status: 200,

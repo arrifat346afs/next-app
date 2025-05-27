@@ -1,5 +1,8 @@
 "use client";
 
+import React, { useState, useEffect, useCallback } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import {
   Line,
   LineChart,
@@ -8,11 +11,9 @@ import {
   XAxis,
   YAxis,
 } from "@/app/(pages)/dashboard/_components/chart";
-// import { ChartTooltip } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
-import { useEffect, useState, useRef, useCallback } from "react";
 
 // Define types for our data
 interface ModelUsageData {
@@ -21,287 +22,73 @@ interface ModelUsageData {
   [modelName: string]: any;
 }
 
-interface ModelMetric {
-  modelName: string;
-  imageCount: number;
-  timestamp: number; // Unix timestamp
-}
-
-interface ApiResponse {
-  success: boolean;
-  data?: ModelMetric[];
-  error?: string;
-}
-
 export function AIModelComparisonChart() {
   const [chartData, setChartData] = useState<ModelUsageData[]>([]);
   const [isUsingSampleData, setIsUsingSampleData] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [dataReceived, setDataReceived] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const hasInitializedRef = useRef(false);
 
-  // Process and organize data for the chart
-  const processModelData = useCallback((modelMetrics: ModelMetric[]) => {
-    try {
-      // Check if we have any real data
-      const hasRealData = modelMetrics.length > 0;
+  const modelUsageData = useQuery(api.modelUsage.getModelUsageData);
 
-      // If no real data, return empty array
-      if (!hasRealData) {
-        return [];
-      }
+  useEffect(() => {
+    console.log("modelUsageData:", modelUsageData);
+    if (modelUsageData?.success && modelUsageData.data) {
+      console.log("modelUsageData.data:", modelUsageData.data);
+      // Process and organize data for the chart
+      const processModelData = (modelMetrics: any[]) => {
+        try {
+          // Check if we have any real data
+          const hasRealData = modelMetrics.length > 0;
 
-      // Group data by date and model
-      const groupedByDate = modelMetrics.reduce(
-        (acc, metric) => {
-          const date = new Date(metric.timestamp);
-          const dateKey = format(date, "yyyy-MM-dd");
-
-          if (!acc[dateKey]) {
-            acc[dateKey] = {
-              date,
-              formattedDate: format(date, "MMM d"),
-            };
+          // If no real data, return empty array
+          if (!hasRealData) {
+            return [];
           }
 
-          // Add or increment the model count
-          const modelName = metric.modelName;
-          acc[dateKey][modelName] =
-            (acc[dateKey][modelName] || 0) + metric.imageCount;
+          // Group data by date and model
+          const groupedByDate = modelMetrics.reduce(
+            (acc: any, metric: any) => {
+              const date = new Date(metric.timestamp);
+              const dateKey = format(date, "yyyy-MM-dd");
 
-          return acc;
-        },
-        {} as Record<string, ModelUsageData>
-      );
+              if (!acc[dateKey]) {
+                acc[dateKey] = {
+                  date,
+                  formattedDate: format(date, "MMM d"),
+                };
+              }
 
-      // Convert to array and sort by date
-      return Object.values(groupedByDate).sort(
-        (a, b) => a.date.getTime() - b.date.getTime()
-      );
-    } catch (error) {
-      console.error("Error processing model data:", error);
-      return [];
-    }
-  }, []);
+              // Add or increment the model count
+              const modelName = metric.modelName;
+              acc[dateKey][modelName] =
+                (acc[dateKey][modelName] || 0) + metric.imageCount;
 
-  // Generate empty data with a message
-  const generateEmptyData = useCallback(() => {
-    return [
-      {
-        date: new Date(),
-        formattedDate: "No Data",
-        "No Data Available": 0,
-      },
-    ];
-  }, []);
+              return acc;
+            },
+            {} as Record<string, ModelUsageData>
+          );
 
-  // Fetch data from the API
-  const fetchModelData = useCallback(async () => {
-    // Prevent multiple fetches
-    if (isLoading) return;
+          // Convert to array and sort by date
+          return Object.values(groupedByDate).sort(
+            (a: any, b: any) => a.date.getTime() - b.date.getTime()
+          );
+        } catch (error) {
+          console.error("Error processing model data:", error);
+          return [];
+        }
+      };
 
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Use the full URL with localhost for development
-      const apiUrl =
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3000/api/model-usage"
-          : "https://nextjs-starter-kit-kappa-three.vercel.app/api/model-usage";
-
-      console.log("Fetching data from:", apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // Include credentials for cookies if needed
-        credentials: "include",
-        // Add cache control to prevent caching
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const result: ApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Failed to fetch model data");
-      }
-
-      console.log("Received data:", result.data);
-
-      // Process the data for the chart
-      const processedData = processModelData(result.data);
-      setChartData(
-        processedData.length > 0 ? processedData : generateEmptyData()
-      );
+      const processedData = processModelData(modelUsageData.data);
+      setChartData(processedData.length > 0 ? processedData as ModelUsageData[] : []);
       setIsUsingSampleData(processedData.length === 0);
-      setLastUpdated(new Date());
-
-      return processedData;
-    } catch (error) {
-      console.error("Error fetching model data:", error);
-      setError(error instanceof Error ? error.message : "Unknown error");
-      setChartData(generateEmptyData());
-      setIsUsingSampleData(true);
-      return [];
-    } finally {
       setIsLoading(false);
+    } else if (modelUsageData?.error) {
+      setError(modelUsageData.error);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
     }
-  }, [generateEmptyData, processModelData, isLoading]);
-
-  // Function to add new data via API
-  const addModelData = useCallback(async (modelName: string, imageCount: number) => {
-    try {
-      // Use the full URL with localhost for development
-      const apiUrl =
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3000/api/model-usage"
-          : "/api/model-usage";
-
-      console.log("Sending data to:", apiUrl, { modelName, imageCount });
-
-      // Send data to API
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          modelName,
-          imageCount,
-        }),
-        // Include credentials for cookies if needed
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to add model data");
-      }
-
-      console.log("Data added successfully:", result.data);
-
-      // Update states
-      setLastUpdated(new Date());
-      setDataReceived(true);
-      setIsUsingSampleData(false);
-
-      // Show notification for a few seconds
-      if (notificationTimeoutRef.current) {
-        clearTimeout(notificationTimeoutRef.current);
-      }
-
-      notificationTimeoutRef.current = setTimeout(() => {
-        setDataReceived(false);
-      }, 3000);
-
-      // Refresh data from API
-      fetchModelData();
-    } catch (error) {
-      console.error("Error adding model data:", error);
-      setError(error instanceof Error ? error.message : "Unknown error");
-    }
-  }, [fetchModelData]);
-
-  // Clear all data (for testing purposes)
-  const clearAllData = useCallback(async () => {
-    try {
-      // Use the full URL with localhost for development
-      const apiUrl =
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3000/api/model-usage"
-          : "https://nextjs-starter-kit-kappa-three.vercel.app/api/model-usage";
-
-      console.log("Clearing data from:", apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // Include credentials for cookies if needed
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to clear model data");
-      }
-
-      console.log("Data cleared successfully");
-
-      setChartData(generateEmptyData());
-      setIsUsingSampleData(true);
-      setLastUpdated(null);
-      setError(null);
-    } catch (error) {
-      console.error("Error clearing model data:", error);
-      setError(error instanceof Error ? error.message : "Unknown error");
-    }
-  }, [generateEmptyData]);
-
-  // Set up API functions and initial data fetch - only once
-  useEffect(() => {
-    // Only fetch data once when the component mounts
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-
-      // Expose functions to window object for external applications
-      // @ts-ignore
-      window.addAIModelData = addModelData;
-      // @ts-ignore
-      window.clearAIModelData = clearAllData;
-      // @ts-ignore
-      window.refreshAIModelData = fetchModelData;
-
-      // Initial data fetch only when component mounts
-      fetchModelData();
-
-      // Set up event listener for messages from desktop app
-      const handleExternalData = (event: MessageEvent) => {
-        if (event.data && event.data.type === "ai-model-data") {
-          const { modelName, imageCount } = event.data;
-          addModelData(modelName, imageCount);
-        }
-      };
-
-      window.addEventListener("message", handleExternalData);
-
-      return () => {
-        // Clean up
-        // @ts-ignore
-        delete window.addAIModelData;
-        // @ts-ignore
-        delete window.clearAIModelData;
-        // @ts-ignore
-        delete window.refreshAIModelData;
-        window.removeEventListener("message", handleExternalData);
-
-        if (notificationTimeoutRef.current) {
-          clearTimeout(notificationTimeoutRef.current);
-        }
-      };
-    }
-  }, [addModelData, clearAllData, fetchModelData]);
+  }, [modelUsageData]);
 
   // Get unique model names from the data
   const modelNames =
@@ -352,15 +139,6 @@ export function AIModelComparisonChart() {
             </Badge>
           )}
 
-          {dataReceived && (
-            <Badge
-              variant="outline"
-              className="bg-blue-500/10 text-blue-500 border-blue-500/20 animate-pulse"
-            >
-              New Data Received!
-            </Badge>
-          )}
-
           {error && (
             <Badge
               variant="outline"
@@ -370,12 +148,6 @@ export function AIModelComparisonChart() {
             </Badge>
           )}
         </div>
-
-        {lastUpdated && (
-          <div className="text-xs text-muted-foreground">
-            Last updated: {format(lastUpdated, "MMM d, yyyy HH:mm:ss")}
-          </div>
-        )}
       </div>
 
       {/* Chart */}
@@ -391,135 +163,78 @@ export function AIModelComparisonChart() {
           </div>
         )}
         <Card className="h-[300px] relative p-2">
-        <ResponsiveContainer width="100%" height="100%" >
-          <LineChart data={chartData}>
-            <XAxis
-              dataKey="formattedDate"
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              padding={{ left: 10, right: 10 }}
-              interval={4}
-            />
-            <YAxis
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}`}
-              width={30}
-            />
-            {modelNames.map((modelName, index) => (
-              <Line
-                key={modelName}
-                type="monotone"
-                dataKey={modelName}
-                stroke={getModelColor(index)}
-                strokeWidth={2}
-                dot={{ r: 3, strokeWidth: 2 }}
-                activeDot={{ r: 5, strokeWidth: 2 }}
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <XAxis
+                dataKey="formattedDate"
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                padding={{ left: 10, right: 10 }}
+                interval={4}
               />
-            ))}
-            <Tooltip
-              content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
-                  // Find the data point to get the full date
-                  const dataPoint = chartData.find(
-                    (d) => d.formattedDate === label
-                  );
-                  const fullDate =
-                    dataPoint && dataPoint.date instanceof Date
-                      ? format(dataPoint.date, "MMMM d, yyyy")
-                      : label;
+              <YAxis
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+                width={30}
+              />
+              {modelNames.map((modelName, index) => (
+                <Line
+                  key={modelName}
+                  type="monotone"
+                  dataKey={modelName}
+                  stroke={getModelColor(index)}
+                  strokeWidth={2}
+                  dot={{ r: 3, strokeWidth: 2 }}
+                  activeDot={{ r: 5, strokeWidth: 2 }}
+                />
+              ))}
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    // Find the data point to get the full date
+                    const dataPoint = chartData.find(
+                      (d) => d.formattedDate === label
+                    );
+                    const fullDate =
+                      dataPoint && dataPoint.date instanceof Date
+                        ? format(dataPoint.date, "MMMM d, yyyy")
+                        : label;
 
-                  return (
-                    <div className="bg-black/80 border border-gray-800 p-2">
-                      <div className="text-sm text-white font-medium">
-                        {fullDate}
-                      </div>
-                      {payload.map((entry, index) => (
-                        <div
-                          key={`item-${index}`}
-                          className="flex items-center gap-2"
-                        >
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: entry.color }}
-                          />
-                          <span className="text-gray-300">{entry.name}:</span>
-                          <span className="text-white font-medium">
-                            {entry.value} images
-                          </span>
+                    return (
+                      <div className="bg-black/80 border border-gray-800 p-2">
+                        <div className="text-sm text-white font-medium">
+                          {fullDate}
                         </div>
-                      ))}
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+                        {payload.map((entry, index) => (
+                          <div
+                            key={`item-${index}`}
+                            className="flex items-center gap-2"
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="text-gray-300">{entry.name}:</span>
+                            <span className="text-white font-medium">
+                              {entry.value} images
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </Card>
       </div>
-
-
-
-      {/* Testing controls - only visible in development */}
-      {/* {process.env.NODE_ENV === "development" && (
-        <div className="mt-4 p-2 border border-dashed rounded-md">
-          <div className="text-xs font-medium mb-2">
-            Development Testing Controls
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() =>
-                addModelData("DALL-E", Math.floor(Math.random() * 30) + 1)
-              }
-              className="px-2 py-1 text-xs bg-blue-500 text-white rounded-md"
-            >
-              Add DALL-E Data
-            </button>
-            <button
-              onClick={() =>
-                addModelData("Midjourney", Math.floor(Math.random() * 40) + 1)
-              }
-              className="px-2 py-1 text-xs bg-blue-500 text-white rounded-md"
-            >
-              Add Midjourney Data
-            </button>
-            <button
-              onClick={clearAllData}
-              className="px-2 py-1 text-xs bg-red-500 text-white rounded-md"
-            >
-              Clear All Data
-            </button>
-            <button
-              onClick={fetchModelData}
-              className="px-2 py-1 text-xs bg-green-500 text-white rounded-md"
-            >
-              Refresh Data
-            </button>
-          </div>
-
-          <div className="mt-2 text-xs">
-            <p>API Endpoints:</p>
-            <ul className="list-disc pl-5">
-              <li>
-                <code>GET /api/model-usage</code> - Fetch all model usage data
-              </li>
-              <li>
-                <code>POST /api/model-usage</code> - Add new model usage data
-              </li>
-              <li>
-                <code>DELETE /api/model-usage</code> - Clear all model usage
-                data
-              </li>
-            </ul>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 }

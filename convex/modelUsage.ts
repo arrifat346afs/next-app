@@ -84,49 +84,48 @@ export const addModelUsageData = mutation({
           // If no user ID is available, use a default for testing
           userId = "default_user";
           console.log(`Convex: Using default user ID: ${userId}`);
-        }
-      } else {
+        }      } else {
         console.log(`Convex: Using provided userId: ${userId}`);
       }
 
-      // Create new model usage data entry
-      const newEntry = {
-        modelName: args.modelName,
-        imageCount: args.imageCount,
-        timestamp: Date.now(),
-        userId: userId, // Include userId in the entry
-      };
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
 
-      console.log("Convex: Creating new model usage entry:", newEntry);
+      // Search for existing entry with same userId, modelName, and usageDate
+      const existingEntry = await ctx.db
+        .query("modelUsage")
+        .withIndex("by_user_model_date", (q) => 
+          q
+            .eq("userId", userId)
+            .eq("modelName", args.modelName)
+            .eq("usageDate", today)
+        )
+        .first();
 
-      // Insert into database
-      const id = await ctx.db.insert("modelUsage", newEntry);
-
-      // Create a duplicate entry with a different userId format for testing
-      // This helps ensure data can be found regardless of userId format
-      // if (userId && !userId.startsWith("test_")) {
-      //   let alternateUserId;
-      //   if (userId.startsWith("user_")) {
-      //     alternateUserId = userId.replace("user_", "");
-      //   } else {
-      //     alternateUserId = `user_${userId}`;
-      //   }
-
-      //   console.log(
-      //     `Convex: Also creating entry with alternate userId: ${alternateUserId}`
-      //   );
-
-      //   const alternateEntry = {
-      //     ...newEntry,
-      //     userId: alternateUserId,
-      //   };
-
-      //   await ctx.db.insert("modelUsage", alternateEntry);
-      // }
+      let entryId;
+      if (existingEntry) {
+        // Update existing entry by adding to imageCount
+        await ctx.db.patch(existingEntry._id, {
+          imageCount: existingEntry.imageCount + args.imageCount,
+          timestamp: Date.now(), // Update timestamp to latest
+        });
+        console.log("Convex: Updated existing model usage entry:", existingEntry._id);
+        entryId = existingEntry._id;
+      } else {
+        // Create new model usage data entry
+        entryId = await ctx.db.insert("modelUsage", {
+          modelName: args.modelName,
+          imageCount: args.imageCount,
+          timestamp: Date.now(),
+          userId: userId,
+          usageDate: today,
+        });
+        console.log("Convex: Created new model usage entry");
+      }
 
       return {
         success: true,
-        data: { ...newEntry, _id: id },
+        data: entryId,
       };
     } catch (error) {
       console.error("Error adding model usage data:", error);
@@ -327,6 +326,165 @@ export const getUserModelUsageData = query({
       return {
         success: false,
         error: "Failed to retrieve user model usage data",
+      };
+    }
+  },
+});
+
+/**
+ * Query to get the total number of images processed by a user
+ * Only counts images processed in the current billing period (last 30 days)
+ */
+export const getCurrentImageCount = query({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get current timestamp
+      const now = Date.now();
+      // Calculate timestamp for 30 days ago (billing period)
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;      // Query the database for all image processing entries for this user in the last 30 days
+      const userModelUsage = await ctx.db
+        .query("modelUsage")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .filter((q) => q.gt(q.field("timestamp"), thirtyDaysAgo))
+        .collect();
+
+      // Calculate total image count
+      const totalImageCount = userModelUsage.reduce((sum, entry) => sum + (entry.imageCount || 0), 0);
+
+      return totalImageCount;
+    } catch (error) {
+      console.error("Error retrieving user image count:", error);
+      return 0;
+    }
+  },
+});
+
+/**
+ * Query to get daily usage statistics for a specific user
+ */
+export const getDailyUserUsage = query({
+  args: {
+    userId: v.string(),
+    startDate: v.optional(v.string()), // YYYY-MM-DD format
+    endDate: v.optional(v.string()), // YYYY-MM-DD format
+  },
+  handler: async (ctx, args) => {
+    try {
+      let query = ctx.db
+        .query("modelUsage")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId));
+
+      // If date range is provided, filter by it
+      if (args.startDate) {
+        query = query.filter((q) => q.gte(q.field("usageDate"), args.startDate!));
+      }
+      if (args.endDate) {
+        query = query.filter((q) => q.lte(q.field("usageDate"), args.endDate!));
+      }
+
+      const usageData = await query.collect();
+
+      // Group by date and model
+      const dailyUsage = usageData.reduce((acc, entry) => {
+        const date = entry.usageDate;
+        if (!acc[date]) {
+          acc[date] = {};
+        }
+        if (!acc[date][entry.modelName]) {
+          acc[date][entry.modelName] = 0;
+        }
+        acc[date][entry.modelName] += entry.imageCount;
+        return acc;
+      }, {} as Record<string, Record<string, number>>);
+
+      return {
+        success: true,
+        data: dailyUsage,
+      };
+    } catch (error) {
+      console.error("Error getting daily user usage:", error);
+      return {
+        success: false,
+        error: "Failed to get daily user usage",
+      };
+    }
+  },
+});
+
+/**
+ * Query to get overall usage statistics for each model
+ */
+export const getModelUsageStats = query({
+  args: {
+    startDate: v.optional(v.string()), // YYYY-MM-DD format
+    endDate: v.optional(v.string()), // YYYY-MM-DD format
+  },
+  handler: async (ctx, args) => {
+    try {
+      let query = ctx.db.query("modelUsage").withIndex("by_model");
+
+      // If date range is provided, filter by it
+      if (args.startDate) {
+        query = query.filter((q) => q.gte(q.field("usageDate"), args.startDate!));
+      }
+      if (args.endDate) {
+        query = query.filter((q) => q.lte(q.field("usageDate"), args.endDate!));
+      }
+
+      const usageData = await query.collect();
+
+      // Group by model
+      const modelStats = usageData.reduce((acc, entry) => {
+        if (!acc[entry.modelName]) {
+          acc[entry.modelName] = {
+            totalUsage: 0,
+            uniqueUsers: new Set(),
+            dailyUsage: {},
+          };
+        }
+        
+        acc[entry.modelName].totalUsage += entry.imageCount;
+        acc[entry.modelName].uniqueUsers.add(entry.userId);
+        
+        // Track daily usage
+        if (!acc[entry.modelName].dailyUsage[entry.usageDate]) {
+          acc[entry.modelName].dailyUsage[entry.usageDate] = 0;
+        }
+        acc[entry.modelName].dailyUsage[entry.usageDate] += entry.imageCount;
+        
+        return acc;
+      }, {} as Record<string, { 
+        totalUsage: number, 
+        uniqueUsers: Set<string>,
+        dailyUsage: Record<string, number>
+      }>);
+
+      // Convert Sets to arrays for serialization
+      const serializedStats = Object.entries(modelStats).reduce((acc, [model, stats]) => {
+        acc[model] = {
+          totalUsage: stats.totalUsage,
+          uniqueUsers: Array.from(stats.uniqueUsers),
+          dailyUsage: stats.dailyUsage,
+        };
+        return acc;
+      }, {} as Record<string, {
+        totalUsage: number,
+        uniqueUsers: string[],
+        dailyUsage: Record<string, number>
+      }>);
+
+      return {
+        success: true,
+        data: serializedStats,
+      };
+    } catch (error) {
+      console.error("Error getting model usage stats:", error);
+      return {
+        success: false,
+        error: "Failed to get model usage stats",
       };
     }
   },
