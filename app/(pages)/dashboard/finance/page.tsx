@@ -128,7 +128,7 @@ export default function FinancePage() {
                       />
                       {currentImageCount >= FREE_USER_LIMIT && (
                         <p className="text-sm text-red-500">
-                          You've reached your image processing limit. Upgrade to Pro for unlimited processing.
+                          You&apos;ve reached your image processing limit. Upgrade to Pro for unlimited processing.
                         </p>
                       )}
                     </>
