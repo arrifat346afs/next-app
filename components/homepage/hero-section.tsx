@@ -22,7 +22,7 @@ const transitionVariants = {
 
 export default function HeroSection() {
   return (
-    <main className="overflow-hidden">
+    <main className="relative overflow-hidden">
       <BackgroundBeams />
       <div
         aria-hidden

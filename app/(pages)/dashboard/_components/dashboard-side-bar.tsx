@@ -28,11 +28,6 @@ const navItems: NavItem[] = [
     href: "/dashboard/finance",
     icon: Banknote
   },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings
-  }
 ]
 
 export default function DashboardSideBar() {

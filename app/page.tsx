@@ -33,7 +33,6 @@ export default async function Home() {
     <PageWrapper>
       <div className="w-full bg-gradient-to-t from-background to-background/40">
         <HeroSection />
-        <SideBySide />
         <Features />
         <Pricing result={filteredProducts as any} />
         <FAQsThree />

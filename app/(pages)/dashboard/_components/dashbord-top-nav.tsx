@@ -1,6 +1,5 @@
 "use client"
 
-import ModeToggle from '@/components/mode-toggle'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
@@ -65,21 +64,21 @@ export default function DashboardTopNav({ children }: { children: ReactNode }) {
                 </Link>
               </DialogClose>
               <Separator className="my-3" />
-              <DialogClose asChild>
+              {/* <DialogClose asChild>
                 <Link href="/dashboard/settings">
                   <Button variant="outline" className="w-full">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </Button>
                 </Link>
-              </DialogClose>
+              </DialogClose> */}
             </div>
           </SheetContent>
         </Dialog>
         <div className="flex justify-center items-center gap-2 ml-auto">
           <Button variant={"outline"} onClick={handleManageSubscription}>Manage Subscription</Button>
           {<UserProfile />}
-          <ModeToggle />
+
         </div>
       </header>
       {children}
